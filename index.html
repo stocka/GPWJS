@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GPWJS</title>
+  <meta charset="utf-8" />
+  <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+  <script src="https://raw.github.com/mrdoob/three.js/master/build/three.js"></script>
+  <style type="text/css">
+    body {
+      background: #000;
+    }
+    #container {
+      background: #000;
+      width: 640px;
+      height: 480px;
+    }
+  </style>
+  <script type="text/javascript">
+
+    var SECTIONS = {
+      FRONT: 0,
+      LEFT: 1,
+      BACK: 2,
+      RIGHT: 3
+    };
+
+    // Store width/height values
+    var WIDTH, 
+      HEIGHT,
+      HALF_WIDTH,
+      HALF_HEIGHT,
+      ASPECT;
+
+    // Store view constants
+    var VIEW_ANGLE = 90,
+      NEAR = 0.1,
+      FAR = 10000;
+
+    // Store mathematical constants
+    var FULLCIRCLE = 2 * Math.PI,
+      RADIAN = Math.PI / 180,
+      RADIANOFFSET = 0.5 * Math.PI;
+
+    var TERRAINSEGMENTS = 64,
+      TERRAINSUBSEGMENTS = 2,
+      MINHEIGHT = -64.0,
+      MAXHEIGHT = 32.0,
+      HEIGHTVARIANCE = Math.abs(MINHEIGHT) + Math.abs(MAXHEIGHT);
+      SEGMENTDEPTH = 32.0,
+      HALFSEGMENTDEPTH = SEGMENTDEPTH / 2.0;
+
+    var GROUNDCOLOR = 0x603517,
+      MIDCOLOR = 0x00a844,
+      PEAKCOLOR = 0xFFFFFF;
+
+    var container,
+      scene,
+      renderer,
+      camera,
+      terrainArray = [],
+      midTerrainColor;
+
+    function getRandHeight() {
+      return MINHEIGHT + (Math.random() * HEIGHTVARIANCE);
+    }
+
+    function getGradientValue(startColor, endColor, percent) {
+
+      var rStart = (startColor >> 16) % 256,
+        gStart = (startColor >> 8) % 256,
+        bStart = startColor % 256;
+
+      var rEnd = (endColor >> 16) % 256,
+        gEnd = (endColor >> 8) % 256,
+        bEnd = endColor % 256;        
+
+      return (((rStart + ((rEnd - rStart) * percent)) % 256) << 16) +
+        (((gStart + ((gEnd - gStart) * percent)) % 256) << 8) +
+        (bStart + ((bEnd - bStart) * percent)) % 256;
+    }
+
+    function getColor(yCoord) {
+
+      var colorHex;
+
+      if( yCoord === 0 ) {
+        colorHex = MIDCOLOR;
+      } else if ( yCoord < 0 ) {
+        colorHex = getGradientValue(GROUNDCOLOR, MIDCOLOR, yCoord / MINHEIGHT);
+      }
+      else {
+        colorHex = getGradientValue(MIDCOLOR, PEAKCOLOR, yCoord / MAXHEIGHT);
+      }
+
+      return new THREE.Color(colorHex);
+    }
+
+
+    function addGeomTriangle(geometry, segmentIndex, subSegmentIndex,  section, startDepth, varianceHeight) {
+
+      var horizOffset,
+        vertices = [],
+        vertexColors = [getColor(varianceHeight), midTerrainColor, midTerrainColor];
+
+      horizOffset =  ((subSegmentIndex % TERRAINSUBSEGMENTS) - (TERRAINSUBSEGMENTS / 2)) * SUBSEGMENTWIDTH;
+
+      // Variant vertex is always first
+      vertices.push( new THREE.Vector3(horizOffset + HALFSUBSEGMENTWIDTH, varianceHeight, startDepth + HALFSEGMENTDEPTH )); 
+
+      switch(section) {
+
+        case SECTIONS.LEFT:
+          vertices.push( new THREE.Vector3(horizOffset, 0, startDepth + SEGMENTDEPTH)); 
+          vertices.push( new THREE.Vector3(horizOffset, 0, startDepth)); 
+          break;
+
+        case SECTIONS.BACK:
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, startDepth + SEGMENTDEPTH));
+          vertices.push( new THREE.Vector3(horizOffset, 0, startDepth + SEGMENTDEPTH));
+          break;
+
+        case SECTIONS.RIGHT:
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, startDepth));
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, startDepth + SEGMENTDEPTH));
+          break;
+
+        default:
+          // also known as SECTIONS.FRONT
+          vertices.push( new THREE.Vector3(horizOffset, 0, startDepth));
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, startDepth));
+      }
+
+      // Add our vertices
+      geometry.vertices.push( vertices[0] ); 
+      geometry.vertices.push( vertices[1] );
+      geometry.vertices.push( vertices[2] );
+
+      // Create a face for these vertices
+      var newVertexIndex = geometry.vertices.length - 3;
+
+      // Figure out our normal
+      var diffBa = new THREE.Vector3(),
+        diffCa = new THREE.Vector3(),
+        newNormal = new THREE.Vector3();
+
+      diffBa.subVectors( vertices[1], vertices[0] );
+      diffCa.subVectors( vertices[2], vertices[0] );
+      newNormal.crossVectors(diffBa, diffCa);
+      newNormal = newNormal.normalize();
+
+      geometry.faces.push( new THREE.Face3( 
+        newVertexIndex, newVertexIndex + 1, newVertexIndex + 2, 
+        newNormal, 
+        vertexColors) 
+      );
+    }
+
+    /**
+     * Renders a frame in the animation.
+     */
+    function render() { 
+      requestAnimationFrame(render); 
+      renderer.render(scene, camera); 
+    }
+
+    $(function () {
+        var terrainIndex = 0,
+          curTerrainDepth = SEGMENTDEPTH * (TERRAINSEGMENTS - 1),
+          terrainMaterial;
+
+        container = $("#container");
+        WIDTH = container.width();
+        HEIGHT = container.height();
+        HALF_WIDTH = WIDTH / 2;
+        HALF_HEIGHT = HEIGHT / 2;
+        ASPECT = WIDTH / HEIGHT;
+        SUBSEGMENTWIDTH = (WIDTH * 4) / TERRAINSUBSEGMENTS;
+        HALFSUBSEGMENTWIDTH = SUBSEGMENTWIDTH  / 2.0;
+
+        // Cache some common things
+        midTerrainColor = getColor(0);
+        terrainMaterial = new THREE.MeshBasicMaterial( {vertexColors: THREE.VertexColors} );
+
+        // Set up the scene/renderer
+        scene = new THREE.Scene();
+
+        // Look off into the distance
+        camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR );
+        camera.position.y = 100;
+        camera.lookAt(new THREE.Vector3(0.0, 0.0, curTerrainDepth));
+        camera.updateProjectionMatrix();
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(WIDTH, HEIGHT);
+        container.append(renderer.domElement);
+
+        for(terrainIndex = TERRAINSEGMENTS - 1; terrainIndex >= 0; terrainIndex -= 1) {
+
+          var subSegmentIndex = 0,
+            terrainGeom = new THREE.Geometry(),
+            terrainMesh;
+
+          for(subSegmentIndex = 0; subSegmentIndex < TERRAINSUBSEGMENTS; subSegmentIndex += 1) {
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.BACK, curTerrainDepth, getRandHeight());
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.LEFT, curTerrainDepth, getRandHeight());
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.FRONT, curTerrainDepth, getRandHeight());
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.RIGHT, curTerrainDepth, getRandHeight());
+          }
+
+          // Decrement our starting segment depth
+          curTerrainDepth -= SEGMENTDEPTH;
+
+          // Now add our terrain to the scene
+          terrainGeom.mergeVertices();
+          terrainGeom.computeVertexNormals();
+          terrainArray.push(terrainGeom);
+          terrainMesh = new THREE.Mesh(terrainGeom, terrainMaterial);
+          // Add some jitter to the mesh horizontal positioning
+          //terrainMesh.position.x = Math.random() * (WIDTH / 2);
+          scene.add(terrainMesh);
+        }
+
+        render();
+    });
+
+  </script>
+
+</head>
+<body>
+  <div id="container">
+  </div>
+</body>
+</html>
