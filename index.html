@@ -267,10 +267,11 @@
             terrainMesh;
 
           for(subSegmentIndex = 0; subSegmentIndex < TERRAINSUBSEGMENTS; subSegmentIndex += 1) {
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.LEFT, getRandHeight());
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.RIGHT, getRandHeight());
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.FRONT, getRandHeight());
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.BACK, getRandHeight());
+            var randHeight = getRandHeight();
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.LEFT, randHeight);
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.RIGHT, randHeight);
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.FRONT, randHeight);
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.BACK, randHeight);
           }
 
           terrainGeom.computeFaceNormals();
