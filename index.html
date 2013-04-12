@@ -246,11 +246,12 @@
 
         // Set up the scene/renderer
         scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(FOGCOLOR, 0.001);
 
         // Look off into the distance
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR );
         camera.position.y = MAXHEIGHT * 1.5;
-        camera.lookAt(new THREE.Vector3(0.0, 0.0, curTerrainDepth));
+        camera.lookAt(new THREE.Vector3(0.0, 0.0, curTerrainDepth - ( 3 * SEGMENTDEPTH )));
         camera.updateProjectionMatrix();
 
         renderer = new THREE.WebGLRenderer();
