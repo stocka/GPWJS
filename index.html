@@ -31,25 +31,22 @@
       HALF_HEIGHT,
       ASPECT;
 
-    // Store view constants
-    var VIEW_ANGLE = 75,
-      NEAR = 0.1,
-      FAR = 10000;
-
-    // Store mathematical constants
-    var FULLCIRCLE = 2 * Math.PI,
-      RADIAN = Math.PI / 180,
-      RADIANOFFSET = 0.5 * Math.PI;
-
+    // Store our terrain settings
     var TERRAINSEGMENTS = 64,
-      TERRAINSUBSEGMENTS = 8,
-      MINHEIGHT = -64.0,
-      MAXHEIGHT = 64.0,
+      TERRAINSUBSEGMENTS = 16,
+      MINHEIGHT = -96.0,
+      MAXHEIGHT = 48.0,
       HEIGHTVARIANCE = Math.abs(MINHEIGHT) + Math.abs(MAXHEIGHT);
       SEGMENTDEPTH = 32.0,
       HALFSEGMENTDEPTH = SEGMENTDEPTH / 2.0,
       TERRAINFRAMEMOVEMENT = 0.5;
 
+    // Store view constants
+    var VIEW_ANGLE = 75,
+      NEAR = 0.1,
+      FAR = (1+TERRAINSEGMENTS) * SEGMENTDEPTH;
+
+    // Store color constants
     var GROUNDCOLOR = 0x603517,
       MIDCOLOR = 0x00a844,
       PEAKCOLOR = 0xFFFFFF,
@@ -246,7 +243,7 @@
 
         // Set up the scene/renderer
         scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(FOGCOLOR, 0.001);
+        scene.fog = new THREE.FogExp2(FOGCOLOR, 0.0015);
 
         // Look off into the distance
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR );
