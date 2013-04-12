@@ -139,8 +139,8 @@
           break;
 
         case SECTIONS.BACK:
-          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, SEGMENTDEPTH));
           vertices.push( new THREE.Vector3(horizOffset, 0, SEGMENTDEPTH));
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, SEGMENTDEPTH));
           break;
 
         case SECTIONS.RIGHT:
@@ -150,8 +150,8 @@
 
         default:
           // also known as SECTIONS.FRONT
-          vertices.push( new THREE.Vector3(horizOffset, 0, 0));
           vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, 0));
+          vertices.push( new THREE.Vector3(horizOffset, 0, 0));
       }
 
       // Add our vertices
@@ -251,14 +251,12 @@
         // Look off into the distance
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR );
         camera.position.y = MAXHEIGHT * 1.5;
-        camera.lookAt(new THREE.Vector3(0.0, 0.0, curTerrainDepth - ( 3 * SEGMENTDEPTH )));
+        camera.lookAt(new THREE.Vector3(0.0, 0.0, curTerrainDepth - ( 8 * SEGMENTDEPTH )));
         camera.updateProjectionMatrix();
 
         renderer = new THREE.WebGLRenderer();
         renderer.setSize(WIDTH, HEIGHT);
         container.append(renderer.domElement);
-
-
 
         for(terrainIndex = TERRAINSEGMENTS - 1; terrainIndex >= 0; terrainIndex -= 1) {
 
@@ -268,10 +266,10 @@
 
           for(subSegmentIndex = 0; subSegmentIndex < TERRAINSUBSEGMENTS; subSegmentIndex += 1) {
             var randHeight = getRandHeight();
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.LEFT, randHeight);
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.RIGHT, randHeight);
             addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.FRONT, randHeight);
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.LEFT, randHeight);
             addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.BACK, randHeight);
+            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.RIGHT, randHeight);
           }
 
           terrainGeom.computeFaceNormals();
