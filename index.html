@@ -52,7 +52,8 @@
       PEAKCOLOR = 0xFFFFFF,
       SKYCOLORSTART = 0x483D8B,
       SKYCOLOREND = 0x7B68EE,
-      FOGCOLOR = 0xDCDCDC;
+      FOGCOLOR = 0xDCDCDC,
+      STARLIGHT = 0xf5f6ce;
 
     var container,
       scene,
@@ -248,7 +249,7 @@
         // Look off into the distance
         camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR );
         camera.position.y = MAXHEIGHT * 1.5;
-        camera.lookAt(new THREE.Vector3(0.0, 0.0, curTerrainDepth - ( 8 * SEGMENTDEPTH )));
+        camera.lookAt(new THREE.Vector3(0.0, 0.0, curTerrainDepth - ( SEGMENTDEPTH / 4 )));
         camera.updateProjectionMatrix();
 
         renderer = new THREE.WebGLRenderer();
@@ -285,6 +286,44 @@
           // Decrement our starting segment depth
           curTerrainDepth -= SEGMENTDEPTH;
         }
+
+        // Add stars
+        var stars = new THREE.Geometry(),
+          starStuff =
+          new THREE.ParticleBasicMaterial({
+            color: STARLIGHT,
+            size: 1,
+            sizeAttenuation: false,
+            fog: false
+          });         
+
+        // Create the star vertices
+        for(p = 0; p < 512; p += 1) {
+          var pX, pY, star, sign;
+
+          if( Math.random() <= 0.5 ) {
+            sign = 1.0;
+          } 
+          else {
+            sign = -1.0;
+          }
+
+          // Randomly place our star
+          // We multiply the width/height values so that it will show up
+          // across the screen and not how the plane would normally be projected
+          pX = sign * Math.random() * SUBSEGMENTWIDTH * TERRAINSUBSEGMENTS * 8,
+          pY = Math.random() * HALF_HEIGHT * 6,
+          star = new THREE.Vector3(pX, pY, TERRAINSEGMENTS * SEGMENTDEPTH);
+
+          // Add it to the geometry
+          stars.vertices.push(star);
+        }
+
+        // Add the star system to the scene
+        var starSystem = new THREE.ParticleSystem(
+          stars,
+          starStuff);
+        scene.add(starSystem);        
 
         render();
     });
