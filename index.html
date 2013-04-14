@@ -36,10 +36,12 @@
       TERRAINSUBSEGMENTS = 16,
       MINHEIGHT = -96.0,
       MAXHEIGHT = 48.0,
-      HEIGHTVARIANCE = Math.abs(MINHEIGHT) + Math.abs(MAXHEIGHT);
+      HEIGHTVARIANCE = Math.abs(MINHEIGHT) + Math.abs(MAXHEIGHT),
       SEGMENTDEPTH = 32.0,
       HALFSEGMENTDEPTH = SEGMENTDEPTH / 2.0,
-      TERRAINFRAMEMOVEMENT = 0.5;
+      TERRAINFRAMEMOVEMENT = 0.5,
+      SUBSEGMENTWIDTH,
+      HALFSUBSEGMENTWIDTH;
 
     // Store view constants
     var VIEW_ANGLE = 75,
@@ -117,7 +119,14 @@
       return new THREE.Color(colorHex);
     }
 
-
+    /**
+     * Adds a triangle (faces/vertex) to the specified geometry.
+     * @param {THREE.Geometry} geometry   The geometry to modify.
+     * @param {Number} segmentIndex       The index of the segment (depth specifier).
+     * @param {Number} subSegmentIndex    The index of the subsegment (horizontal specifier).
+     * @param {SECTIONS} section          The section (front, back, etc).
+     * @param {Number} varianceHeight     The height of the variant "peak".
+     */
     function addGeomTriangle(geometry, segmentIndex, subSegmentIndex,  section, varianceHeight) {
 
       var horizOffset,
@@ -215,7 +224,7 @@
 
         // Now change our nearest terrain index
         nearestTerrainIndex += 1;
-        if( nearestTerrainIndex == TERRAINSEGMENTS ) {
+        if( nearestTerrainIndex === TERRAINSEGMENTS ) {
           // Wrap-around!
           nearestTerrainIndex = 0;
         }
@@ -227,7 +236,8 @@
     $(function () {
         var terrainIndex = 0,
           curTerrainDepth = SEGMENTDEPTH * (TERRAINSEGMENTS - 1),
-          terrainMaterial;
+          terrainMaterial,
+          particleIndex;
 
         container = $("#container");
         WIDTH = container.width();
@@ -276,7 +286,8 @@
           // Now add our terrain to the scene
           terrainMesh = new THREE.Mesh(terrainGeom, terrainMaterial);
           terrainMesh.doubleSided = true;
-          terrainMesh.position.z = curTerrainDepth
+          terrainMesh.position.z = curTerrainDepth;
+
           // Add some jitter to the mesh horizontal positioning
           terrainMesh.position.x = Math.random() * (WIDTH / 2);
           // Add it to the beginning of the array (since we're starting from the back)
@@ -298,7 +309,7 @@
           });         
 
         // Create the star vertices
-        for(p = 0; p < 512; p += 1) {
+        for(particleIndex = 0; particleIndex < 512; particleIndex += 1) {
           var pX, pY, star, sign;
 
           if( Math.random() <= 0.5 ) {
@@ -311,8 +322,8 @@
           // Randomly place our star
           // We multiply the width/height values so that it will show up
           // across the screen and not how the plane would normally be projected
-          pX = sign * Math.random() * SUBSEGMENTWIDTH * TERRAINSUBSEGMENTS * 8,
-          pY = Math.random() * HALF_HEIGHT * 6,
+          pX = sign * Math.random() * SUBSEGMENTWIDTH * TERRAINSUBSEGMENTS * 8;
+          pY = Math.random() * HALF_HEIGHT * 6;
           star = new THREE.Vector3(pX, pY, TERRAINSEGMENTS * SEGMENTDEPTH);
 
           // Add it to the geometry
