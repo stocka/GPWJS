@@ -41,7 +41,8 @@
       HALFSEGMENTDEPTH = SEGMENTDEPTH / 2.0,
       TERRAINFRAMEMOVEMENT = 0.5,
       SUBSEGMENTWIDTH,
-      HALFSUBSEGMENTWIDTH;
+      HALFSUBSEGMENTWIDTH,
+      STARCOUNT = 512;
 
     // Store view constants
     var VIEW_ANGLE = 75,
@@ -334,7 +335,7 @@
           });         
 
         // Create the star vertices
-        for(particleIndex = 0; particleIndex < 512; particleIndex += 1) {
+        for(particleIndex = 0; particleIndex < STARCOUNT; particleIndex += 1) {
           var pX, pY, star, sign;
 
           if( Math.random() <= 0.5 ) {
@@ -347,7 +348,7 @@
           // Randomly place our star
           // We multiply the width/height values so that it will show up
           // across the screen and not how the plane would normally be projected
-          pX = sign * Math.random() * SUBSEGMENTWIDTH * TERRAINSUBSEGMENTS * 8;
+          pX = sign * Math.random() * SUBSEGMENTWIDTH * TERRAINSUBSEGMENTS * 5;
           pY = Math.random() * HALF_HEIGHT * 6;
           star = new THREE.Vector3(pX, pY, TERRAINSEGMENTS * SEGMENTDEPTH);
 
