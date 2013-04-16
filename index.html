@@ -72,7 +72,7 @@
      * @return {Number} A randomized height value.
      */
     function getRandHeight() {
-      return MINHEIGHT + (Math.random() * HEIGHTVARIANCE);
+      return THREE.Math.randFloat(MINHEIGHT, MAXHEIGHT);
     }
 
     /**
