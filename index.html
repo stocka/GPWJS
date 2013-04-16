@@ -121,22 +121,24 @@
 
     /**
      * Adds a triangle (faces/vertex) to the specified geometry.
-     * @param {THREE.Geometry} geometry   The geometry to modify.
-     * @param {Number} segmentIndex       The index of the segment (depth specifier).
-     * @param {Number} subSegmentIndex    The index of the subsegment (horizontal specifier).
-     * @param {SECTIONS} section          The section (front, back, etc).
-     * @param {Number} varianceHeight     The height of the variant "peak".
+     * @param {THREE.Geometry} geometry       The geometry to modify.
+     * @param {Number} segmentIndex           The index of the segment (depth specifier).
+     * @param {Number} subSegmentIndex        The index of the subsegment (horizontal specifier).
+     * @param {SECTIONS} section              The section (front, back, etc).
+     * @param {Number} varianceHeight         The height of the variant "peak".
+     * @param {Number} flushWidthPerturbation The horizontal offset to apply to make the subsegment flush with the previous subsegment.
+     * @param {Number} widthPerturbation      The width variance to apply to this subsegment to make it wider or skinnier.
      */
-    function addGeomTriangle(geometry, segmentIndex, subSegmentIndex,  section, varianceHeight) {
+    function addGeomTriangle(geometry, segmentIndex, subSegmentIndex,  section, varianceHeight, flushWidthPerturbation, widthPerturbation) {
 
       var horizOffset,
         vertices = [],
         vertexColors = [getColor(varianceHeight), midTerrainColor, midTerrainColor];
 
-      horizOffset =  ((subSegmentIndex % TERRAINSUBSEGMENTS) - (TERRAINSUBSEGMENTS / 2)) * SUBSEGMENTWIDTH;
+      horizOffset =  (((subSegmentIndex % TERRAINSUBSEGMENTS) - (TERRAINSUBSEGMENTS / 2)) * SUBSEGMENTWIDTH) + flushWidthPerturbation;
 
       // Variant vertex is always first
-      vertices.push( new THREE.Vector3(horizOffset + HALFSUBSEGMENTWIDTH, varianceHeight, HALFSEGMENTDEPTH )); 
+      vertices.push( new THREE.Vector3(horizOffset + HALFSUBSEGMENTWIDTH - (widthPerturbation / 2.0), varianceHeight, HALFSEGMENTDEPTH )); 
 
       switch(section) {
 
@@ -147,17 +149,17 @@
 
         case SECTIONS.BACK:
           vertices.push( new THREE.Vector3(horizOffset, 0, SEGMENTDEPTH));
-          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, SEGMENTDEPTH));
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH + widthPerturbation, 0, SEGMENTDEPTH));
           break;
 
         case SECTIONS.RIGHT:
-          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, SEGMENTDEPTH));
-          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, 0));
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH + widthPerturbation, 0, SEGMENTDEPTH));
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH + widthPerturbation, 0, 0));
           break;
 
         default:
           // also known as SECTIONS.FRONT
-          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH, 0, 0));
+          vertices.push( new THREE.Vector3(horizOffset + SUBSEGMENTWIDTH + widthPerturbation, 0, 0));
           vertices.push( new THREE.Vector3(horizOffset, 0, 0));
       }
 
@@ -184,6 +186,30 @@
         newNormal, 
         vertexColors) 
       );
+    }
+
+    /**
+     * Adds a subsegment to the specified segment geometry.
+     * @param {THREE.Geometry} segmentGeometry  The segment geometry to which subsegment faces/vertices will be added.
+     * @param {Number} segmentIndex             The index of the terrain segment in the scene.
+     * @param {Number} subSegmentIndex          The index of the terrain subsegment.
+     * @param {Number} totalWidthPerturbation   The current total width perturbation for the segment.
+     * @returns {Number} The new total width perturbation for the segment.
+     */
+    function addSubsegment(segmentGeometry, segmentIndex, subSegmentIndex, totalWidthPerturbation) {
+        var randHeight = getRandHeight(),
+          widthPerturbation;
+
+        // Figure out the perturbation for this subsegment width
+        widthPerturbation = THREE.Math.randFloatSpread( HALFSUBSEGMENTWIDTH / 1.25 );
+
+        addGeomTriangle(segmentGeometry, segmentIndex, subSegmentIndex, SECTIONS.FRONT, randHeight, totalWidthPerturbation, widthPerturbation);
+        addGeomTriangle(segmentGeometry, segmentIndex, subSegmentIndex, SECTIONS.LEFT, randHeight, totalWidthPerturbation, widthPerturbation);
+        addGeomTriangle(segmentGeometry, segmentIndex, subSegmentIndex, SECTIONS.BACK, randHeight, totalWidthPerturbation, widthPerturbation);
+        addGeomTriangle(segmentGeometry, segmentIndex, subSegmentIndex, SECTIONS.RIGHT, randHeight, totalWidthPerturbation, widthPerturbation);
+
+        // Return our new total width perturbation for the index
+        return totalWidthPerturbation + widthPerturbation;      
     }
 
     /**
@@ -270,14 +296,13 @@
 
           var subSegmentIndex = 0,
             terrainGeom = new THREE.Geometry(),
-            terrainMesh;
+            terrainMesh,
+            segmentPerturbation = 0;
 
           for(subSegmentIndex = 0; subSegmentIndex < TERRAINSUBSEGMENTS; subSegmentIndex += 1) {
-            var randHeight = getRandHeight();
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.FRONT, randHeight);
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.LEFT, randHeight);
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.BACK, randHeight);
-            addGeomTriangle(terrainGeom, terrainIndex, subSegmentIndex, SECTIONS.RIGHT, randHeight);
+            // Build our subsegment, but store the new overall width
+            // perturbation value.
+            segmentPerturbation = addSubsegment(terrainGeom, terrainIndex, subSegmentIndex, segmentPerturbation);
           }
 
           terrainGeom.computeFaceNormals();
